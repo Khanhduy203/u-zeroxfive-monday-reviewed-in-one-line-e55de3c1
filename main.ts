@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const ENTRY =
@@ -12,10 +12,22 @@ if (lines.length !== 1) {
 if (ENTRY.length < 1 || ENTRY.length > 200) {
   throw new Error(`entry must be 1-200 chars, got ${ENTRY.length}`);
 }
+if (ENTRY.includes("\r")) {
+  throw new Error("entry must not contain carriage-return characters");
+}
+if (ENTRY.trim().length === 0) {
+  throw new Error("entry must not be only whitespace");
+}
 
 mkdirSync(outDir, { recursive: true });
 const outPath = join(outDir, "entry.txt");
 writeFileSync(outPath, ENTRY + "\n", "utf8");
+
+// Round-trip check: what was written must read back byte-identical.
+const roundTrip = readFileSync(outPath, "utf8");
+if (roundTrip !== ENTRY + "\n") {
+  throw new Error(`round-trip mismatch in ${outPath}`);
+}
 
 console.log(ENTRY);
 console.log(`chars: ${ENTRY.length}`);
